@@ -17,7 +17,7 @@ export const login = asyncHandler(async (req, res, next) => {
 })
 
 export function validateUser (req, res, next) {
-	const token = req.get('Authorization').split('Bearer ')[1]
+	const token = req.get('Authorization')?.split('Bearer ')[1]
 	if (!token) return next(new AppError(401, 'Missing token'))
 
 	jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
