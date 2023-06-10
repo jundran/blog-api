@@ -24,14 +24,14 @@ export const getBlog = asyncHandler(async (req, res, next) => {
 
 	if (!blog.isPublished) {
 		// Do user authentication here because only unpublished blog requires it
-		const token = req.cookies.token
+		const token = req.get('Authorization').split('Bearer ')[1]
 		if (!token) return next(new AppError(
 			401,
 			'This blog is not published. If it is your blog, please login.'
 		))
 
-		jwt.verify(token, 'secretkey', (err, user) => {
-			if (err) return next(new AppError(401, 'Unable to verify token cookie', err))
+		jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
+			if (err) return next(new AppError(401, 'Unable to verify bearer token', err))
 			else if (user._id !== blog.user._id.toString()) {
 				return next(new AppError(403,'This blog is not published and does not belong to you.'))
 			}

@@ -1,6 +1,5 @@
 import express from 'express'
 import dotenv from 'dotenv'
-import cookieParser from 'cookie-parser'
 import apiRouter from './routes/apiRouter.js'
 import AppError from './error.js'
 import morgan from 'morgan'
@@ -15,16 +14,14 @@ dotenv.config()
 const app = express()
 if (!production) app.use(morgan('dev'))
 
-app.use(cors({ origin: true, credentials: true }))
+app.use(cors({ origin: true }))
 // app.use(cors({
 // 	origin: [
 //		'https://blog-manager.onrender.com',
 // 		'https://blog-viewer.onrender.com'
-// 	],
-// 	credentials: true // allow setting cookie
+// 	]
 // }))
 app.use(express.json())
-app.use(cookieParser())
 
 // ROUTES
 app.use('/api/v1', apiRouter)

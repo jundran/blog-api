@@ -10,33 +10,39 @@ export const login = asyncHandler(async (req, res, next) => {
 
 	bcrypt.compare(req.body.password, user.password, (err, match) => {
 		if (err) console.error(err)
-		const plainObject = user.toObject()
-		delete plainObject.password
 
-		if (match) {
-			jwt.sign(plainObject, 'secretkey', (signErr, token) => {
-				if (signErr) return next(new AppError(500, 'Error signing user object', signErr))
-				res.cookie('token', token, { httpOnly: true, sameSite: 'Strict' })
-				res.json({ user, token })
-			})
-		}
+		if (match) returnUserWithTokenFromDocument(res, next, user)
 		else next(new AppError(400, 'Wrong password'))
 	})
 })
 
-export function logout (req, res, next) {
-	res.clearCookie('token', { httpOnly: true, sameSite: 'Strict' })
-	res.sendStatus(204)
-}
-
 export function validateUser (req, res, next) {
-	const token = req.cookies.token
+	const token = req.get('Authorization').split('Bearer ')[1]
 	if (!token) return next(new AppError(401, 'Missing token'))
 
-	jwt.verify(token, 'secretkey', (err, user) => {
-		if (err) return next(new AppError(401, 'Unable to verify token cookie', err))
+	jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
+		if (err) return next(new AppError(401, 'Unable to verify bearer token', err))
 
 		req.user = user
 		next()
+	})
+}
+
+export function returnUserWithTokenFromDocument (res, next, user, update) {
+	const plainObject = user.toObject()
+	delete plainObject.password
+	jwt.sign(plainObject, process.env.SECRET_KEY, (err, token) => {
+		if (err) return next(new AppError(500, 'Error signing user object', err))
+		res.status(update ? 200 : 201)
+		plainObject.token = token
+		res.json({ user: plainObject })
+	})
+}
+
+export function returnUserWithToken (req, res, next) {
+	jwt.sign(req.user, process.env.SECRET_KEY, (err, token) => {
+		if (err) return next(new AppError(500, 'Error signing user object', err))
+		req.user.token = token
+		res.json({ user: req.user })
 	})
 }

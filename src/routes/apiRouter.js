@@ -1,5 +1,5 @@
 import express from 'express'
-import { login, logout, validateUser } from '../controllers/authentication.js'
+import { login, validateUser, returnUserWithToken } from '../controllers/authentication.js'
 import { createUser, updateUser, deleteAccount } from '../controllers/user.js'
 import {
 	getAllPublishedBlogs,
@@ -20,11 +20,10 @@ router.get('/', (req, res) => {
 
 // Authentication
 router.post('/user/login', login)
-router.post('/user/logout', logout)
 
 // User
 router.post('/user', createUser)
-router.get('/user', validateUser, (req, res, next) => res.json({ user: req.user }))
+router.get('/user', validateUser, returnUserWithToken)
 router.put('/user', validateUser, updateUser)
 router.delete('/user', validateUser, deleteAccount)
 
