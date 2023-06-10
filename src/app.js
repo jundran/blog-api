@@ -12,15 +12,17 @@ dotenv.config()
 
 // EXPRESS
 const app = express()
-if (!production) app.use(morgan('dev'))
+app.use(morgan('dev'))
 
-app.use(cors({ origin: true }))
-// app.use(cors({
-// 	origin: [
-//		'https://blog-manager.onrender.com',
-// 		'https://blog-viewer.onrender.com'
-// 	]
-// }))
+// app.use(cors({ origin: true }))
+app.use(cors({
+	origin: [
+		'http://localhost:5500', // viewer dev
+		'http://localhost:5173', // manager dev
+		'https://jundran.github.io/blog-viewer',
+		'https://jundran.github.io/blog-manager'
+	]
+}))
 app.use(express.json())
 
 // ROUTES
