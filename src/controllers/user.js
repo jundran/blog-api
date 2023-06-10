@@ -32,7 +32,10 @@ export const createUser = [
 		})
 
 		user.save()
-			.then(newUser => returnUserWithTokenFromDocument(res, next, newUser))
+			.then(newUser => {
+				res.status(201)
+				returnUserWithTokenFromDocument(res, next, newUser)
+			})
 			.catch(err => handleDocumentSaveError(req, res, next, err))
 	})
 ]
@@ -57,7 +60,7 @@ export const updateUser = [
 		User.findByIdAndUpdate(req.user._id, user, { new: true }).exec()
 			.then(user => {
 				if (!user) return next(new AppError(401, 'User not found in the database'))
-				returnUserWithTokenFromDocument(res, next, user, true)
+				returnUserWithTokenFromDocument(res, next, user)
 			})
 			.catch(err => handleDocumentSaveError(req, res, next, err))
 	})

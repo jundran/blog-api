@@ -28,12 +28,11 @@ export function validateUser (req, res, next) {
 	})
 }
 
-export function returnUserWithTokenFromDocument (res, next, user, update) {
+export function returnUserWithTokenFromDocument (res, next, user) {
 	const plainObject = user.toObject()
 	delete plainObject.password
 	jwt.sign(plainObject, process.env.SECRET_KEY, (err, token) => {
 		if (err) return next(new AppError(500, 'Error signing user object', err))
-		res.status(update ? 200 : 201)
 		plainObject.token = token
 		res.json({ user: plainObject })
 	})
