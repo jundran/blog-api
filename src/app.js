@@ -19,8 +19,7 @@ app.use(cors({
 	origin: [
 		'http://localhost:5500', // viewer dev
 		'http://localhost:5173', // manager dev
-		'https://jundran.github.io/blog-viewer',
-		'https://jundran.github.io/blog-manager'
+		'https://jundran.github.io'
 	]
 }))
 app.use(express.json())
