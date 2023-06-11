@@ -2,19 +2,22 @@ import bcrypt from 'bcrypt'
 import asyncHandler from '../asyncHandler.js'
 import { body } from 'express-validator'
 import AppError, { ValidationError } from '../error.js'
+import { addErrorsToRequestObject, handleValidationFailure } from '../validation.js'
+import { generateAccessToken, generateRefreshToken } from './authentication.js'
 import User from '../models/user.js'
 import Blog from '../models/blog.js'
-import { returnUserWithTokenFromDocument } from './authentication.js'
-import {
-	addErrorsToRequestObject,
-	handleValidationFailure
-} from '../validation.js'
 
 const validateFields = [
 	body('firstname', 'First name must not be empty.').trim().isLength({ min: 1 }),
 	body('surname', 'Surname must not be empty.').trim().isLength({ min: 1 }),
 	body('email', 'Email is not formatted correctly.').trim().isEmail()
 ]
+
+export const getUser = asyncHandler(async (req, res, next) => {
+	const user = await User.findById(req.user._id)
+	if (!user) return next(new AppError(404, 'User not found'))
+	res.json({ user })
+})
 
 export const createUser = [
 	...validateFields,
@@ -23,20 +26,30 @@ export const createUser = [
 	(req, res, next) => handleValidationFailure(req, res, next),
 
 	asyncHandler(async (req, res, next) => {
+		// Create user object from request body
 		const hashedPassword = await bcrypt.hash(req.body.password, 10)
-		const user = new User({
+		const user = {
 			firstname: req.body.firstname,
 			surname: req.body.surname,
 			email: req.body.email,
 			password: hashedPassword
-		})
+		}
 
-		user.save()
-			.then(newUser => {
-				res.status(201)
-				returnUserWithTokenFromDocument(res, next, newUser)
-			})
-			.catch(err => handleDocumentSaveError(req, res, next, err))
+		// Generate access tokens and include refresh to be saved
+		const accessToken = generateAccessToken({ id : user.id })
+		const refreshToken = generateRefreshToken({ id : user.id })
+		user.refreshToken = refreshToken
+
+		// Create and save document from Model constructor
+		const document = new User(user)
+		await document.save()
+
+		// Return regular user object, omitting unnecessary fields
+		const plainUser = document.toObject()
+		delete plainUser.password
+		delete plainUser.refreshToken
+		res.status(201)
+		res.json({ user: plainUser, accessToken, refreshToken })
 	})
 ]
 
@@ -59,8 +72,9 @@ export const updateUser = [
 
 		User.findByIdAndUpdate(req.user._id, user, { new: true }).exec()
 			.then(user => {
-				if (!user) return next(new AppError(401, 'User not found in the database'))
-				returnUserWithTokenFromDocument(res, next, user)
+				if (!user) return next(new AppError(401, 'User not found'))
+				delete user.password
+				res.json({ user })
 			})
 			.catch(err => handleDocumentSaveError(req, res, next, err))
 	})

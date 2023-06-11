@@ -30,7 +30,7 @@ export const getBlog = asyncHandler(async (req, res, next) => {
 			'This blog is not published. If it is your blog, please login.'
 		))
 
-		jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
+		jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
 			if (err) return next(new AppError(401, 'Unable to verify bearer token', err))
 			else if (user._id !== blog.user._id.toString()) {
 				return next(new AppError(403,'This blog is not published and does not belong to you.'))

@@ -18,6 +18,14 @@ const UserSchema = new Schema({
 	password: {
 		type: String,
 		required: true
+	},
+	refreshToken: {
+		type: String,
+		required: false
+	},
+	isActive: {
+		type: Boolean,
+		default: true
 	}
 },
 {

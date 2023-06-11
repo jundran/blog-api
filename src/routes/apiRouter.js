@@ -1,6 +1,6 @@
 import express from 'express'
-import { login, validateUser, returnUserWithToken } from '../controllers/authentication.js'
-import { createUser, updateUser, deleteAccount } from '../controllers/user.js'
+import { login, validateUser } from '../controllers/authentication.js'
+import { getUser, createUser, updateUser, deleteAccount } from '../controllers/user.js'
 import {
 	getAllPublishedBlogs,
 	getUserBlogs,
@@ -23,7 +23,7 @@ router.post('/user/login', login)
 
 // User
 router.post('/user', createUser)
-router.get('/user', validateUser, returnUserWithToken)
+router.get('/user', validateUser, getUser)
 router.put('/user', validateUser, updateUser)
 router.delete('/user', validateUser, deleteAccount)
 
