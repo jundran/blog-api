@@ -23,6 +23,14 @@ export const login = asyncHandler(async (req, res, next) => {
 	})
 })
 
+// Client is responsibe for deleting access token
+// Access token has short expiry time but will still be valid until it expires
+// Refresh token is removed from the DB so access token cannot be refreshed
+export const logout = asyncHandler(async (req, res, next) => {
+	await User.findByIdAndUpdate(req.user.id, { refreshToken: null })
+	res.sendStatus(204)
+})
+
 export function validateUser (req, res, next) {
 	const token = req.get('Authorization')?.split('Bearer ')[1]
 	if (!token) return next(new AppError(401, 'Missing access token'))

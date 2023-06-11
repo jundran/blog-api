@@ -65,6 +65,10 @@ export const updateUser = [
 			if (!entry[1].trim()) continue // Do not update empty fields
 			else user[entry[0]] = entry[1]
 		}
+
+		// TODO - require current password
+		// change password first and if it succeeds then do rest
+		// replace refresh token when changing password
 		if (req.body.password) {
 			const hashedPassword = await bcrypt.hash(req.body.password, 10)
 			user.password = hashedPassword
