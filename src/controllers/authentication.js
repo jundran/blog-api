@@ -28,11 +28,24 @@ export function validateUser (req, res, next) {
 	if (!token) return next(new AppError(401, 'Missing access token'))
 
 	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-		if (err) return next(new AppError(403, 'Unable to verify bearer token', err))
+		if (err) return next(new AppError(403, 'Unable to verify access token', err))
 		req.user = user
 		next()
 	})
 }
+
+export const RefreshAccessToken = asyncHandler(async (req, res, next) => {
+	const token = req.get('Authorization')?.split('Bearer ')[1]
+	if (!token) return next(new AppError(401, 'Missing refresh token'))
+
+	jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, payload) => {
+		if (err) return next(new AppError(403, 'Unable to verify refresh token', err))
+		const user = await User.findById(payload.id)
+		if (!user.isActive) return next(new AppError(403, 'User account is disabled'))
+		if (!user.refreshToken) return next(new AppError(403, 'Refresh token is not valid'))
+		res.json({ accessToken: generateAccessToken({id: user.id }) })
+	})
+})
 
 export function generateAccessToken (payload) {
 	return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET,	{ expiresIn: '5m' })

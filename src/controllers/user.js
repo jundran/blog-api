@@ -14,7 +14,7 @@ const validateFields = [
 ]
 
 export const getUser = asyncHandler(async (req, res, next) => {
-	const user = await User.findById(req.user._id)
+	const user = await User.findById(req.user.id)
 	if (!user) return next(new AppError(404, 'User not found'))
 	res.json({ user })
 })
@@ -70,7 +70,7 @@ export const updateUser = [
 			user.password = hashedPassword
 		}
 
-		User.findByIdAndUpdate(req.user._id, user, { new: true }).exec()
+		User.findByIdAndUpdate(req.user.id, user, { new: true }).exec()
 			.then(user => {
 				if (!user) return next(new AppError(401, 'User not found'))
 				delete user.password
@@ -81,8 +81,8 @@ export const updateUser = [
 ]
 
 export const deleteAccount = asyncHandler(async (req, res, next) => {
-	await Blog.deleteMany({ user: req.user._id }).exec()
-	await User.findByIdAndDelete(req.user._id).exec()
+	await Blog.deleteMany({ user: req.user.id }).exec()
+	await User.findByIdAndDelete(req.user.id).exec()
 	res.sendStatus(204)
 })
 

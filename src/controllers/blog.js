@@ -12,7 +12,7 @@ export const getAllPublishedBlogs = asyncHandler(async (req, res, next) => {
 })
 
 export const getUserBlogs = asyncHandler(async (req, res, next) => {
-	const blogs = await Blog.find({ user: req.user._id }).exec()
+	const blogs = await Blog.find({ user: req.user.id }).exec()
 	res.json({ documents: blogs.reverse() })
 })
 
@@ -51,7 +51,7 @@ export const createBlog = [
 			title: req.body.title,
 			text: req.body.text,
 			isPublished: req.body.isPublished,
-			user: req.user._id
+			user: req.user.id
 		})
 
 		await blog.save()
@@ -113,6 +113,6 @@ export const deleteComment = asyncHandler(async (req, res, next) => {
 async function getBlogAndVerifyOwner (req, next) {
 	const blog = await Blog.findById(req.params.id)
 	if (!blog) return next(new AppError(404, `Blog with id ${req.params.id} not found`))
-	if (req.user._id === blog.user.toString()) return blog
+	if (req.user.id === blog.user.toString()) return blog
 	else next(new AppError(403, 'This blog does not belong to you'))
 }
