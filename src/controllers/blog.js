@@ -32,12 +32,15 @@ export const getBlog = asyncHandler(async (req, res, next) => {
 
 		jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
 			if (err) return next(new AppError(401, 'Unable to verify bearer token', err))
-			else if (user._id !== blog.user._id.toString()) {
+			else if (user.id !== blog.user._id.toString()) {
 				return next(new AppError(403,'This blog is not published and does not belong to you.'))
+			} else {
+				res.json({ document: blog })
 			}
 		})
+	} else {
+		res.json({ document: blog })
 	}
-	res.json({ document: blog })
 })
 
 export const createBlog = [
@@ -76,6 +79,7 @@ export const updateBlog = [
 			else if (entry[1].trim()) update[entry[0]] = entry[1] // text
 		}
 
+		// TODO - verify this
 		// Use findByIdAndUpdate because updateOne does not return document
 		const updatedBlog = await Blog.findByIdAndUpdate(blog.id, update, { new: true }).exec()
 		res.json({ document: updatedBlog })

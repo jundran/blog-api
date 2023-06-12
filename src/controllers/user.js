@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt'
 import asyncHandler from '../asyncHandler.js'
 import { body } from 'express-validator'
-import AppError, { ValidationError } from '../error.js'
+import AppError from '../error.js'
 import { addErrorsToRequestObject, handleValidationFailure } from '../validation.js'
-import { generateAccessToken, generateRefreshToken } from './authentication.js'
+import { createAccessToken, createRefreshToken } from './authentication.js'
 import User from '../models/user.js'
 import Blog from '../models/blog.js'
 
@@ -14,7 +14,7 @@ const validateFields = [
 ]
 
 export const getUser = asyncHandler(async (req, res, next) => {
-	const user = await User.findById(req.user.id)
+	const user = await User.findById(req.user.id).select({ refreshToken: 0, password: 0 })
 	if (!user) return next(new AppError(404, 'User not found'))
 	res.json({ user })
 })
@@ -28,24 +28,22 @@ export const createUser = [
 	asyncHandler(async (req, res, next) => {
 		// Create user object from request body
 		const hashedPassword = await bcrypt.hash(req.body.password, 10)
-		const user = {
+		const user = new User({
 			firstname: req.body.firstname,
 			surname: req.body.surname,
 			email: req.body.email,
 			password: hashedPassword
-		}
+		})
 
-		// Generate access tokens and include refresh to be saved
-		const accessToken = generateAccessToken({ id : user.id })
-		const refreshToken = generateRefreshToken({ id : user.id })
+		// Create tokens and add refresh token to user object
+		const accessToken = createAccessToken({ id : user.id })
+		const refreshToken = createRefreshToken({ id : user.id })
 		user.refreshToken = refreshToken
 
-		// Create and save document from Model constructor
-		const document = new User(user)
-		await document.save()
+		await user.save()
 
 		// Return regular user object, omitting unnecessary fields
-		const plainUser = document.toObject()
+		const plainUser = user.toObject()
 		delete plainUser.password
 		delete plainUser.refreshToken
 		res.status(201)
@@ -74,13 +72,11 @@ export const updateUser = [
 			user.password = hashedPassword
 		}
 
-		User.findByIdAndUpdate(req.user.id, user, { new: true }).exec()
-			.then(user => {
-				if (!user) return next(new AppError(401, 'User not found'))
-				delete user.password
-				res.json({ user })
-			})
-			.catch(err => handleDocumentSaveError(req, res, next, err))
+		const updatedUser = await User.findByIdAndUpdate(req.user.id, user, { new: true }).exec()
+		const plainUser = updatedUser.toObject()
+		delete plainUser.password
+		delete plainUser.refreshToken
+		res.json({ user: plainUser })
 	})
 ]
 
@@ -111,11 +107,4 @@ function validatePassword (req, res, next) {
 		req.errors.push('Passwords do not match.')
 	}
 	next()
-}
-
-async function handleDocumentSaveError (req, res, next, err) {
-	if (err?.code === 11000) {
-		return next(new ValidationError('An account with this email already exists'))
-	}
-	next(new AppError(500, 'Unable to save document to database', err))
 }

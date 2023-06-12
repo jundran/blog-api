@@ -12,8 +12,8 @@ export const login = asyncHandler(async (req, res, next) => {
 	bcrypt.compare(req.body.password, user.password, (err, match) => {
 		if (err) console.error(err)
 		if (!match) next(new AppError(400, 'Wrong password'))
-		const accessToken = generateAccessToken({ id: user.id })
-		const refreshToken = generateRefreshToken({id: user.id })
+		const accessToken = createAccessToken({ id: user.id })
+		const refreshToken = createRefreshToken({ id: user.id })
 		user.refreshToken = refreshToken
 		user.save() // Replace refresh token
 		const plainUser = user.toObject()
@@ -49,16 +49,17 @@ export const RefreshAccessToken = asyncHandler(async (req, res, next) => {
 	jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, payload) => {
 		if (err) return next(new AppError(403, 'Unable to verify refresh token', err))
 		const user = await User.findById(payload.id)
+		if (!user) return next(new AppError(404, 'User account not found'))
 		if (!user.isActive) return next(new AppError(403, 'User account is disabled'))
 		if (!user.refreshToken) return next(new AppError(403, 'Refresh token is not valid'))
-		res.json({ accessToken: generateAccessToken({id: user.id }) })
+		res.json({ accessToken: createAccessToken({ id: user.id }) })
 	})
 })
 
-export function generateAccessToken (payload) {
-	return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET,	{ expiresIn: '5m' })
+export function createAccessToken (payload) { // 5 minute expiry but shorter for testing
+	return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET,	{ expiresIn: '30s' })
 }
 
-export function generateRefreshToken (payload) {
+export function createRefreshToken (payload) {
 	return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '28d' })
 }
