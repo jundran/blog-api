@@ -58,22 +58,36 @@ export const updateUser = [
 	(req, res, next) => handleValidationFailure(req, res, next),
 
 	asyncHandler(async (req, res, next) => {
-		const user = { }
+		const update = { }
+
+		// Update password
+		if (req.body.password) {
+			if (!req.body.existingPassword?.trim()) {
+				req.errors.push('Current password is missing.')
+				return handleValidationFailure(req, res, next)
+			}
+			const existingUser = await User.findById(req.user.id)
+			const match = await bcrypt.compare(req.body.existingPassword, existingUser.password)
+			if (!match) {
+				req.errors.push('Current password is wrong.')
+				return handleValidationFailure(req, res, next)
+			}
+
+			update.refreshToken = createRefreshToken({ id: req.user.id })
+			update.password = await bcrypt.hash(req.body.password, 10)
+			delete req.body.existingPassword // Tidy up for Object.entries
+			delete req.body.password
+			delete req.body.passwordConfirm
+		}
+
+		// Update non-password fields
 		for (const entry of Object.entries(req.body)) {
 			if (!entry[1].trim()) continue // Do not update empty fields
-			else user[entry[0]] = entry[1]
+			else update[entry[0]] = entry[1]
 		}
 
-		// TODO - require current password
-		// change password first and if it succeeds then do rest
-		// replace refresh token when changing password
-		if (req.body.password) {
-			const hashedPassword = await bcrypt.hash(req.body.password, 10)
-			user.password = hashedPassword
-		}
-
-		const updatedUser = await User.findByIdAndUpdate(req.user.id, user, { new: true }).exec()
-		const plainUser = updatedUser.toObject()
+		const user = await User.findByIdAndUpdate(req.user.id, update, { new: true }).exec()
+		const plainUser = user.toObject()
 		delete plainUser.password
 		delete plainUser.refreshToken
 		res.json({ user: plainUser })

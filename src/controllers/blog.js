@@ -79,7 +79,6 @@ export const updateBlog = [
 			else if (entry[1].trim()) update[entry[0]] = entry[1] // text
 		}
 
-		// TODO - verify this
 		// Use findByIdAndUpdate because updateOne does not return document
 		const updatedBlog = await Blog.findByIdAndUpdate(blog.id, update, { new: true }).exec()
 		res.json({ document: updatedBlog })

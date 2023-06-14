@@ -11,7 +11,7 @@ export const login = asyncHandler(async (req, res, next) => {
 
 	bcrypt.compare(req.body.password, user.password, (err, match) => {
 		if (err) console.error(err)
-		if (!match) next(new AppError(400, 'Wrong password'))
+		if (!match) return next(new AppError(400, 'Wrong password'))
 		const accessToken = createAccessToken({ id: user.id })
 		const refreshToken = createRefreshToken({ id: user.id })
 		user.refreshToken = refreshToken
