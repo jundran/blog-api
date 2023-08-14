@@ -25,6 +25,7 @@ app.use(cors({
 app.use(express.json())
 
 // ROUTES
+app.get('/health-check', (req, res) => res.sendStatus(200))
 app.use('/api/v1', apiRouter)
 
 // CATCH 404
